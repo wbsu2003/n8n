@@ -1,0 +1,133 @@
+{
+  "name": "微信天气预报",
+  "nodes": [
+    {
+      "parameters": {},
+      "name": "Start",
+      "type": "n8n-nodes-base.start",
+      "typeVersion": 1,
+      "position": [
+        300,
+        130
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://t.weather.itboy.net/api/weather/city/你的city_code",
+        "allowUnauthorizedCerts": true,
+        "jsonParameters": true,
+        "options": {}
+      },
+      "name": "HTTP Request",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        560,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "triggerTimes": {
+          "item": [
+            {
+              "hour": 7
+            }
+          ]
+        }
+      },
+      "name": "Cron",
+      "type": "n8n-nodes-base.cron",
+      "typeVersion": 1,
+      "position": [
+        300,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "functionCode": "// 处理 json 返回的数据并拼接成字符串\n// 老苏只处理了当天的数据\n\nshidu = items[0].json.data.shidu;\npm25 = items[0].json.data.pm25;\npm10 = items[0].json.data.pm10;\nquality = items[0].json.data.quality;\nwendu = items[0].json.data.wendu;\nganmao = items[0].json.data.ganmao;\nhigh = items[0].json.data.forecast[0].high.replace(/\\s*/g, '');\nlow = items[0].json.data.forecast[0].low.replace(/\\s*/g, '');\nfx = items[0].json.data.forecast[0].fx;\nfl = items[0].json.data.forecast[0].fl;\ntype = items[0].json.data.forecast[0].type;\nymd = items[0].json.data.forecast[0].ymd;\nweek = items[0].json.data.forecast[0].week;\n\nvar yubao = \"天气预报：</br>今天是\" + ymd + \"，\" + week + \"，今天天气\" + type + \"。最\" + high + \"度，最\" + low + \"度，风向\" + fx + \"，风力\" + fl + \"，空气质量\" + quality + \"，湿度\" + shidu + \"，\" + ganmao;\n\n// 调试用的\nconsole.log(encodeURIComponent(yubao).replace(/'/g,\"%27\").replace(/\"/g,\"%22\"));\n\n// 中文写回到到 json 中\nitems[0].json.yubao = yubao;\n// urlencode 后写回到到 json 中\n//items[0].json.yubaoe = encodeURIComponent(yubao).replace(/'/g,\"%27\").replace(/\"/g,\"%22\");\n\nreturn items;"
+      },
+      "name": "Function",
+      "type": "n8n-nodes-base.function",
+      "typeVersion": 1,
+      "position": [
+        800,
+        340
+      ]
+    },
+    {
+      "parameters": {
+        "url": "http://wxpusher.zjiecode.com/api/send/message/",
+        "allowUnauthorizedCerts": true,
+        "options": {},
+        "headerParametersUi": {
+          "parameter": []
+        },
+        "queryParametersUi": {
+          "parameter": [
+            {
+              "name": "appToken",
+              "value": "你的appToken"
+            },
+            {
+              "name": "uid",
+              "value": "你的uid"
+            },
+            {
+              "name": "content",
+              "value": "={{$json[\"yubao\"]}}"
+            }
+          ]
+        }
+      },
+      "name": "HTTP Request1",
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 1,
+      "position": [
+        1050,
+        340
+      ]
+    }
+  ],
+  "connections": {
+    "HTTP Request": {
+      "main": [
+        [
+          {
+            "node": "Function",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cron": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Function": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "timezone": "Asia/Hong_Kong"
+  },
+  "id": 2
+}
